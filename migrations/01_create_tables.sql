@@ -5,8 +5,8 @@ CREATE TABLE users (
     first_name varchar(50),
     last_name varchar(50),
     username varchar(255) UNIQUE NOT NULL,
-    created_at timestamp NOT NULL DEFAULT (now()),
-    role enum(customer,manager) NOT NULL COMMENT 'User type'
+    created_at timestamp NOT NULL DEFAULT now(),
+    role enum('customer', 'manager') NOT NULL COMMENT 'User type'
 );
 
 CREATE TABLE authors (
@@ -22,7 +22,7 @@ CREATE TABLE books (
     description text,
     price_buy decimal(7,2) NOT NULL,
     price_rent decimal(7,2) NOT NULL,
-    status enum(new,rented,sold,returned) NOT NULL DEFAULT 'new',
+    status enum('new', 'rented', 'sold', 'returned') NOT NULL DEFAULT 'new',
     created_at timestamp NOT NULL DEFAULT (now())
 );
 
