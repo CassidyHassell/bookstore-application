@@ -41,7 +41,7 @@ CREATE TABLE orders (
     id int PRIMARY KEY AUTO_INCREMENT,
     user_id int,
     order_date timestamp NOT NULL DEFAULT (now()),
-    payment_status varchar(20) NOT NULL DEFAULT 'pending',
+    payment_status enum('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     total_price decimal(10,2) NOT NULL,
     email_sent boolean DEFAULT false
 );
@@ -50,7 +50,7 @@ CREATE TABLE order_lines (
     id int PRIMARY KEY AUTO_INCREMENT,
     order_id int NOT NULL,
     book_id int NOT NULL,
-    type varchar(10) NOT NULL COMMENT 'buy or rent',
+    type enum('buy', 'rent') NOT NULL,
     price decimal(7,2) NOT NULL
 );
 
