@@ -10,4 +10,5 @@ class Config:
     DB_USER = os.getenv('DB_USER')
     DB_PASSWORD = os.getenv('DB_PASSWORD')
     DB_PASSWORD_SAFE = quote_plus(DB_PASSWORD)
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET')
     SQLALCHEMY_DATABASE_URI = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD_SAFE}@{DB_HOST}/{DB_NAME}"

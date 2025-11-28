@@ -3,14 +3,20 @@
 import bcrypt
 from flask import Blueprint, jsonify, request
 from sqlalchemy import select
+from auth import token_required
 from db import SessionLocal
 from models import User
-from auth import current_user
+from config import Config
+# from auth import current_user
+import jwt
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
+
+# TODO: require admin role
 @users_bp.route("/", methods=["GET"])
-def get_users():
+@token_required
+def get_users(current_user):
     session = SessionLocal()
     try:
         users = session.query(User).all()
@@ -25,6 +31,7 @@ def get_users():
         session.close()
 
 
+# Testing route TODO: Remove later or require admin role
 @users_bp.route("/<int:id>", methods=["GET"])
 def get_user(id):
     session = SessionLocal()
@@ -39,12 +46,20 @@ def get_user(id):
         session.close()
 
 
-@users_bp.route("/current", methods=["GET"])
-def get_current_user():
-    if current_user.get():
-        return jsonify(current_user.get())
-    else:
-        return jsonify({"error": "No user logged in"}), 401
+@users_bp.route("/me", methods=["GET"])
+@token_required
+def get_current_user(context):
+    id = context['id']
+    session = SessionLocal()
+    try:
+        user = session.get(User, id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({"id": user.id, "username": user.username, "email": user.email, "role": user.role, "first_name": user.first_name, "last_name": user.last_name})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
 
 
 @users_bp.route("/login", methods=["POST"])
@@ -57,8 +72,10 @@ def login():
     try:
         user = session.query(User).filter_by(username=username).first()
         if user and bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
-            current_user.set({"id": user.id, "username": user.username, "role": user.role})
-            return jsonify({"message": "Login successful", "role": user.role})
+            # Create token
+            token = jwt.encode({"id": user.id, "role": user.role}, Config.JWT_SECRET_KEY, algorithm="HS256")
+            # Return user token in response
+            return jsonify({"message": "Login successful", "token": token})
         else:
             return jsonify({"error": "Invalid credentials"}), 401
     finally:
@@ -67,7 +84,6 @@ def login():
 
 @users_bp.route("/logout", methods=["POST"])
 def logout():
-    current_user.clear()
     return jsonify({"message": "Logged out"})
 
 
