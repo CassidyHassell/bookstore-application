@@ -36,6 +36,23 @@ def token_required(func):
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             return jsonify({'message': 'Token is invalid!'}), 401
+        finally:
+            session.close()
         return func(data, *args, **kwargs)
 
     return decorated
+from functools import wraps
+from flask import jsonify
+
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def decorated(data, *args, **kwargs):
+            # data comes from token_required
+            role = data.get("role")
+            print(f"User role from token: {role}, required role: {required_role}")
+            if not role or role.lower() != required_role.lower():
+                return jsonify({'message': 'You do not have permission to access this resource!'}), 403
+            return f(data, *args, **kwargs)
+        return decorated
+    return decorator

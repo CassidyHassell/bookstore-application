@@ -3,7 +3,7 @@
 import bcrypt
 from flask import Blueprint, jsonify, request
 from sqlalchemy import select
-from auth import token_required
+from auth import role_required, token_required
 from db import SessionLocal
 from models import User
 from config import Config
@@ -16,7 +16,8 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 # TODO: require admin role
 @users_bp.route("/", methods=["GET"])
 @token_required
-def get_users(current_user):
+@role_required("Manager")
+def get_users(context):
     session = SessionLocal()
     try:
         users = session.query(User).all()
@@ -33,6 +34,8 @@ def get_users(current_user):
 
 # Testing route TODO: Remove later or require admin role
 @users_bp.route("/<int:id>", methods=["GET"])
+@token_required
+@role_required("Manager")
 def get_user(id):
     session = SessionLocal()
     try:
