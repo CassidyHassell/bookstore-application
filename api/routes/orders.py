@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import or_, select
+from services.billing import generate_bill
 from auth import role_required, token_required
 from db import SessionLocal
 from models import Author, Book, Order, OrderLine, User
@@ -64,7 +65,9 @@ def create_order(context):
             session.add(new_order_line)
 
         session.commit()
-        return jsonify({"message": "Order created successfully", "order_id": new_order.id}), 201
+        # Generate bill after order creation
+        bill_html = generate_bill(new_order, new_order.order_lines)
+        return jsonify({"message": "Order created successfully", "order_id": new_order.id, "bill": bill_html}), 201
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 500
