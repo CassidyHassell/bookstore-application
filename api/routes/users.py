@@ -1,5 +1,6 @@
 # books.py
 
+import datetime
 import bcrypt
 from flask import Blueprint, jsonify, request
 from sqlalchemy import select
@@ -74,7 +75,7 @@ def login():
         user = session.query(User).filter_by(username=username).first()
         if user and bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
             # Create token
-            token = jwt.encode({"id": user.id, "role": user.role}, Config.JWT_SECRET_KEY, algorithm="HS256")
+            token = jwt.encode({"id": user.id, "role": user.role, "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=30)}, Config.JWT_SECRET_KEY, algorithm="HS256")
             # Return user token in response
             return jsonify({"message": "Login successful", "token": token})
         else:
