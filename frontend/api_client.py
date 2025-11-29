@@ -17,3 +17,39 @@ class ApiClient:
             "user_id": user_id,
             "role": role
         }
+    
+
+    def get_all_books(self, jwt: str):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/books/", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch books: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+
+    def get_available_books(self, jwt: str):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/books/available", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch books: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+
+    def get_books_by_status(self, jwt: str, status: str):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/books/status/{status}", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch books by status: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    
+    def create_order(self, jwt: str, user_id: int, orderlines: list):
+        headers = {"Authorization": f"{jwt}"}
+        data = {
+            "user_id": user_id,
+            "order_lines": orderlines
+        }
+        response = requests.post(f"{self.base_url}/orders/", json=data, headers=headers)
+        if response.status_code != 201:
+            raise Exception("Failed to create order: " + response.json().get("error", "Unknown error"))
+        return response.json()
