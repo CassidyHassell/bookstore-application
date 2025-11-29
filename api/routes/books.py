@@ -180,3 +180,31 @@ def update_book_status(context, id):
     finally:
         session.close()
 
+
+# Returned rented book
+@books_bp.route("/<int:id>/return", methods=["POST"])
+@token_required
+@role_required("Customer")
+def return_rented_book(context, id):
+    user_id = context['id']
+    session = SessionLocal()
+    try:
+        book = session.get(Book, id)
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+        if book.status != 'rented':
+            return jsonify({"error": "Book is not currently rented"}), 400
+
+        # Verify that the book is rented by the current user
+        order_line = session.query(OrderLine).join(Order).filter(Order.user_id == user_id, OrderLine.book_id == id, OrderLine.type == 'rent').first()
+        if not order_line:
+            return jsonify({"error": "You have not rented this book"}), 403
+
+        book.status = 'returned'
+        session.commit()
+        return jsonify({"message": "Book returned successfully"})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
