@@ -13,7 +13,6 @@ import jwt
 users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
 
-# TODO: require admin role
 @users_bp.route("/", methods=["GET"])
 @token_required
 @role_required("Manager")
@@ -32,11 +31,10 @@ def get_users(context):
         session.close()
 
 
-# Testing route TODO: Remove later or require admin role
 @users_bp.route("/<int:id>", methods=["GET"])
 @token_required
 @role_required("Manager")
-def get_user(id):
+def get_user(context, id):
     session = SessionLocal()
     try:
         user = session.get(User, id)
@@ -85,6 +83,7 @@ def login():
         session.close()
 
 
+# Logout will be handled client-side by deleting the token
 @users_bp.route("/logout", methods=["POST"])
 def logout():
     return jsonify({"message": "Logged out"})
@@ -92,4 +91,33 @@ def logout():
 
 @users_bp.route("/register", methods=["POST"])
 def register():
-    pass  # Implement registration logic here
+    data = request.json
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+    role = data.get("role")
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+
+    session = SessionLocal()
+
+    try:
+        # Check if username or email already exists
+        existing_user = session.query(User).filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            return jsonify({"error": "Username or email already exists"}), 400
+
+        # Hash the password
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
+
+        # Create new user
+        new_user = User(username=username, email=email, password_hash=password_hash, role=role, first_name=first_name, last_name=last_name)
+        session.add(new_user)
+        session.commit()
+
+        return jsonify({"message": "User registered successfully", "user_id": new_user.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
