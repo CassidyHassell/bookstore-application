@@ -43,13 +43,40 @@ class ApiClient:
         return response.json()
     
     
-    def create_order(self, jwt: str, user_id: int, orderlines: list):
+    def create_order(self, jwt: str, orderlines: list):
         headers = {"Authorization": f"{jwt}"}
+        print(f"{orderlines}")
         data = {
-            "user_id": user_id,
             "order_lines": orderlines
         }
-        response = requests.post(f"{self.base_url}/orders/", json=data, headers=headers)
-        if response.status_code != 201:
-            raise Exception("Failed to create order: " + response.json().get("error", "Unknown error"))
+        response = requests.post(f"{self.base_url}/orders/create_order", json=data, headers=headers)
+        if response.status_code != 200 and response.status_code != 201:
+            try:
+                print(response.json())
+                raise Exception("Failed to create order: " + response.json().get("error", "Unknown error"))
+            except Exception as e:
+                raise Exception(str(response.status_code) + " " + str(e))
+            
+        print(response.json())
+        return response.json()
+    
+    def get_user_rented_books(self, jwt: str):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/books/rented", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch rented books: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def return_book(self, jwt: str, book_id: int):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.patch(f"{self.base_url}/books/{book_id}/return", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to return book: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def get_book_details(self, jwt: str, book_id: int):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/books/{book_id}", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch book details: " + response.json().get("error", "Unknown error"))
         return response.json()
