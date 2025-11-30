@@ -15,8 +15,6 @@ def get_books(context):
     session = SessionLocal()
     try:
         books = session.query(Book).all()
-        if not books:
-            return jsonify({"error": "No books found"}), 404
 
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list})
@@ -79,8 +77,7 @@ def get_available_books(context):
     session = SessionLocal()
     try:
         books = session.query(Book).filter(or_(Book.status == "new", Book.status == "returned")).all()
-        if not books:
-            return jsonify({"error": "No available books found"}), 404
+        
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list})
     except Exception as e:
@@ -95,8 +92,7 @@ def get_unavailable_books(context):
     session = SessionLocal()
     try:
         books = session.query(Book).filter(or_(Book.status == "rented", Book.status == "sold")).all()
-        if not books:
-            return jsonify({"error": "No unavailable books found"}), 404
+        
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list})
     except Exception as e:
@@ -106,7 +102,7 @@ def get_unavailable_books(context):
 
 
 # Get current user's rented books
-@books_bp.route("/user/rented", methods=["GET"])
+@books_bp.route("/rented", methods=["GET"])
 @token_required
 @role_required("Customer")
 def get_user_rented_books(context):
@@ -115,8 +111,7 @@ def get_user_rented_books(context):
     try:
         # Fetch rented books for the user from orders with user_id, order_line with type 'rent', and books with status 'rented'
         books = session.query(Book).join(OrderLine).join(Order).filter(Order.user_id == user_id, OrderLine.type == 'rent', Book.status == 'rented').all()
-        if not books:
-            return jsonify({"error": "No rented books found for the user"}), 404
+        
         books_list = [{"id": b.id} for b in books]
         return jsonify({"books": books_list})
     except Exception as e:
@@ -182,7 +177,7 @@ def update_book_status(context, id):
 
 
 # Returned rented book
-@books_bp.route("/<int:id>/return", methods=["POST"])
+@books_bp.route("/<int:id>/return", methods=["PATCH"])
 @token_required
 @role_required("Customer")
 def return_rented_book(context, id):

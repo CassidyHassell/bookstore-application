@@ -15,8 +15,6 @@ def get_authors(context):
     session = SessionLocal()
     try:
         authors = session.query(Author).all()
-        if not authors:
-            return jsonify({"error": "No authors found"}), 404
 
         authors_list = [{"id": a.id, "name": a.name, "bio": a.bio} for a in authors]
         return jsonify({"authors": authors_list})

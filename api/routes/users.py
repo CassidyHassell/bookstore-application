@@ -21,8 +21,6 @@ def get_users(context):
     session = SessionLocal()
     try:
         users = session.query(User).all()
-        if not users:
-            return jsonify({"error": "No users found"}), 404
 
         users_list = [{"id": u.id, "username": u.username, "email": u.email, "role": u.role} for u in users]
         return jsonify({"users": users_list})

@@ -17,8 +17,6 @@ def get_orders(context):
     session = SessionLocal()
     try:
         orders = session.query(Order).all()
-        if not orders:
-            return jsonify({"error": "No orders found"}), 404
 
         orders_list = []
         for o in orders:
@@ -30,7 +28,7 @@ def get_orders(context):
         session.close()
 
 
-@orders_bp.route("/new_order", methods=["POST"])
+@orders_bp.route("/create_order", methods=["POST"])
 @token_required
 @role_required("Customer")
 def create_order(context):
