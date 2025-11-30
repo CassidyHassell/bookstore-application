@@ -45,8 +45,7 @@ def get_books_by_status(context, status):
     session = SessionLocal()
     try:
         books = session.query(Book).filter(Book.status == status).all()
-        if not books:
-            return jsonify({"error": f"No books found with status '{status}'"}), 404
+        
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list})
     except Exception as e:
