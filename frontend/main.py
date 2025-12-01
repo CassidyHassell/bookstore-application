@@ -1,6 +1,7 @@
 import FreeSimpleGUI as sg
 from frontend.api_client import ApiClient
 from frontend.app_state import AppState
+from frontend.screens.manager import manager_window
 from .screens.login import login_window
 from .screens.catalog import catalog_window
 
@@ -22,6 +23,7 @@ def main():
         catalog_window(state=state, api=api)
     elif state.role.lower() == "manager":
         print("Launching Manager Dashboard...")
+        manager_window(state=state, api=api)
     else:
         print("Unknown role. Access denied.")
 
