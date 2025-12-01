@@ -32,8 +32,13 @@ def get_book(context, id):
         book = session.get(Book, id)
         if not book:
             return jsonify({"error": "Book not found"}), 404
-        return jsonify({"id": book.id, "title": book.title, "status": book.status, "author": {"id": book.author.id, "name": book.author.name}, "price_buy": book.price_buy, "price_rent": book.price_rent, "description": book.description})
+        
+        keyword_list = [{"word": kw.keyword.word, "id": kw.keyword.id} for kw in book.keywords]
+        for kw in book.keywords:
+            print(kw)
+        return jsonify({"id": book.id, "title": book.title, "status": book.status, "author": {"id": book.author.id, "name": book.author.name}, "keywords": keyword_list, "price_buy": book.price_buy, "price_rent": book.price_rent, "description": book.description})
     except Exception as e:
+        print(book.keywords)
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
