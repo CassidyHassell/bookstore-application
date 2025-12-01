@@ -6,28 +6,30 @@ orderlines = []
 
 def catalog_window(state, api):
 
-    def fetch_books(state, api, window=None, status="Available"):
+    def fetch_books(state, api, window=None, status="Available", title_filter="", author_id_filter="", keywords_filter=""):
         try:
-            if status == "Available":
-                resp = api.get_available_books(state.jwt)
-            elif status == "New":
-                resp = api.get_books_by_status(state.jwt, "new")
-            elif status == "Used":
-                resp = api.get_books_by_status(state.jwt, "returned")
-            elif status == "Rented Out":
-                resp = api.get_books_by_status(state.jwt, "rented")
-            else:
-                # Default to available books if unknown status
-                resp = api.get_available_books(state.jwt)
+            status = status if status in ["Available", "New", "Used", "Rented"] else "Available"
+            status = status.lower()
+            if status == "used":
+                status = "returned"
+            if status == "all":
+                status = None
+            
+            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None)
+            print (resp)
             books = resp.get("books", [])
+
         except Exception as e:
             print(f"Error fetching books: {e}")
             books = []
         if window:
             # Update the book list in the window
-            window["book_list"].update(values=[f"{b['id']}: {b['title']}" for b in books])
-            # Disable the selection when books rented out
-            if status == "Rented Out":
+            print(books)
+            print("Should update book list on display")
+            window["book_list"].update(disabled=False)
+            window["book_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in filter(lambda b: title_filter.lower() in b['title'].lower(), books)])
+
+            if status == "rented":
                 window["book_list"].update(disabled=True)
             else:
                 window["book_list"].update(disabled=False)
@@ -36,8 +38,15 @@ def catalog_window(state, api):
     
     books = []
 
+    searches = sg.Frame("Search Books", [
+        [sg.Text("Title:"), sg.Input(key="title_search")],
+        [sg.Text("Author ID:"), sg.Input(key="author_id_search")],
+        [sg.Text("Keywords:"), sg.Input(key="keywords_search")],
+        [sg.Text("Status:"), sg.Combo(["Available", "New", "Used", "Rented"], default_value="Available", key="status_search")],
+        [sg.Button("Search")]
+    ])
     layout = [
-        [sg.Text("Title"), sg.Input(key="search", enable_events=True, size=(30,1)), sg.Button("Search"), sg.DropDown(values=["Available", "New", "Used", "Rented Out"], default_value="Available", key="status_filter"), sg.Button("Filter by Status")],
+        [searches],
         [sg.Text("Catalog")],
         [sg.Listbox(values=[f"{b['id']}: {b['title']}" for b in books], size=(40, 10), key="book_list", select_mode=sg.LISTBOX_SELECT_MODE_MULTIPLE)],
         [sg.Button("Buy Books"), sg.Button("Rent Books"), sg.Button("View Order"), sg.Button("Checkout"), sg.Button("Logout"), sg.Button("Clear Order"), sg.Button("View Rented Books")]
@@ -99,19 +108,14 @@ def catalog_window(state, api):
                 sg.popup(resp.get('bill'))
                 orderlines.clear()
                 # Refresh the book list after checkout
-                fetch_books(state, api, window=window, status=values["status_filter"])
+                fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
             except Exception as e:
                 print(f"Error during checkout: {e}")
                 sg.popup_error(f"Error during checkout: {e}")
 
-        if event == "Filter by Status":
-            status = values["status_filter"]
-            books = fetch_books(state, api, window=window, status=status)
-
         if event == "Search":
-            title = values["search"].lower()
-            filtered_books = [b for b in books if title in b['title'].lower()]
-            window["book_list"].update(values=[f"{b['id']}: {b['title']}" for b in filtered_books])
+            title = values["title_search"].lower()
+            fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
 
         if event == "View Rented Books":
             customer_rents_window(state, api)

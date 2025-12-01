@@ -2,30 +2,24 @@ import FreeSimpleGUI as sg
 
 def manager_books_window(state, api):
 
-    def fetch_books(state, api, window=None, status="All"):
+    def fetch_books(state, api, window=None, status="All", title_filter="", author_id_filter="", keywords_filter=""):
         try:
-            if status == "All":
-                resp = api.get_all_books(state.jwt)
-            elif status == "Available":
-                resp = api.get_available_books(state.jwt)
-            elif status == "New":
-                resp = api.get_books_by_status(state.jwt, "new")
-            elif status == "Used":
-                resp = api.get_books_by_status(state.jwt, "returned")
-            elif status == "Rented Out":
-                resp = api.get_books_by_status(state.jwt, "rented")
-            elif status == "Sold":
-                resp = api.get_books_by_status(state.jwt, "sold")
-            else:
-                # Default to available books if unknown status
-                resp = api.get_all_books(state.jwt)
+            status = status if status in ["All", "Available", "New", "Used", "Sold", "Rented"] else "All"
+            status = status.lower()
+            if status == "used":
+                status = "returned"
+            if status == "all":
+                status = None
+            
+            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None)
             books = resp.get("books", [])
+
         except Exception as e:
             print(f"Error fetching books: {e}")
             books = []
         if window:
             # Update the book list in the window
-            window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books])
+            window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in filter(lambda b: title_filter.lower() in b['title'].lower(), books)])
 
         return books
     
@@ -53,9 +47,9 @@ def manager_books_window(state, api):
 
     searches = sg.Frame("Search Books", [
         [sg.Text("Title:"), sg.Input(key="title_search")],
-        [sg.Text("Author:"), sg.Input(key="author_search")],
+        [sg.Text("Author ID:"), sg.Input(key="author_id_search")],
         [sg.Text("Keywords:"), sg.Input(key="keywords_search")],
-        [sg.Text("Status:"), sg.Combo(["All", "Available", "New", "Used", "Sold", "Rented Out"], default_value="All", key="status_search")],
+        [sg.Text("Status:"), sg.Combo(["All", "Available", "New", "Used", "Sold", "Rented"], default_value="All", key="status_search")],
         [sg.Button("Search")]
     ])
     buttons = [
@@ -100,7 +94,7 @@ def manager_books_window(state, api):
                     load_book_details(state, api, book_id, window=window)
         elif event == "Search":
             print("Searching books...")
-            fetch_books(state, api, window=window, status=values["status_search"])
+            fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
         elif event == "Update Book":
             print("Updating book...")
         elif event == "Delete Book":

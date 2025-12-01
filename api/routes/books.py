@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import or_, select
 from auth import role_required, token_required
 from db import SessionLocal
-from models import Author, Book, Order, OrderLine
+from models import Author, Book, BookKeyword, Keyword, Order, OrderLine
 
 books_bp = Blueprint("books", __name__, url_prefix="/api/v1/books")
 
@@ -12,9 +12,42 @@ books_bp = Blueprint("books", __name__, url_prefix="/api/v1/books")
 @books_bp.route("/", methods=["GET"])
 @token_required
 def get_books(context):
+    author_id = request.args.get("author_id", None)
+    status = request.args.get("status", None)
+    keyword = request.args.getlist("keyword", None)
+    print(f"Filters - author_id: {author_id}, status: {status}, keyword: {keyword}")
     session = SessionLocal()
     try:
-        books = session.query(Book).all()
+        status = status.lower() if status else None
+        if status == "available":
+            status = ["new", "returned"]
+        elif status == "unavailable":
+            status = ["rented", "sold"]
+        elif status == "used":
+            status = ["returned"]
+        elif status and not isinstance(status, list):
+            status = [status]
+        
+        # Normalize and clean inputs
+        keyword = [k for k in keyword if k] if keyword else None
+
+        # Build query dynamically based on provided filters
+        query = session.query(Book)
+        filters = []
+        if author_id:
+            filters.append(Book.author_id == author_id)
+        if status:
+            filters.append(Book.status.in_(status))
+
+        if keyword:
+            # Join keywords when filtering by keyword; include other filters too
+            query = query.join(Book.keywords).join(BookKeyword.keyword)
+            books = query.filter(*(filters + [Keyword.word.in_(keyword)])).distinct().all()
+        else:
+            if filters:
+                books = query.filter(*filters).all()
+            else:
+                books = query.all()
 
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list})
@@ -39,37 +72,6 @@ def get_book(context, id):
         return jsonify({"id": book.id, "title": book.title, "status": book.status, "author": {"id": book.author.id, "name": book.author.name}, "keywords": keyword_list, "price_buy": book.price_buy, "price_rent": book.price_rent, "description": book.description})
     except Exception as e:
         print(book.keywords)
-        return jsonify({"error": str(e)}), 500
-    finally:
-        session.close()
-
-
-@books_bp.route("/status/<string:status>", methods=["GET"])
-@token_required
-def get_books_by_status(context, status):
-    session = SessionLocal()
-    try:
-        books = session.query(Book).filter(Book.status == status).all()
-        
-        books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
-        return jsonify({"books": books_list})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        session.close()
-
-
-@books_bp.route("/author/<int:author_id>", methods=["GET"])
-@token_required
-def get_books_by_author(context, author_id):
-    session = SessionLocal()
-    try:
-        books = session.query(Book).filter(Book.author_id == author_id).all()
-        if not books:
-            return jsonify({"error": f"No books found for author ID '{author_id}'"}), 404
-        books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
-        return jsonify({"books": books_list})
-    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()

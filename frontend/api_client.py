@@ -18,30 +18,19 @@ class ApiClient:
             "role": role
         }
     
-
-    def get_all_books(self, jwt: str):
+    def get_books(self, jwt: str, author_id=None, status=None, keyword=None):
         headers = {"Authorization": f"{jwt}"}
-        response = requests.get(f"{self.base_url}/books/", headers=headers)
+        params = {}
+        if author_id is not None:
+            params["author_id"] = author_id
+        if status is not None:
+            params["status"] = status
+        if keyword is not None:
+            params["keyword"] = keyword 
+        response = requests.get(f"{self.base_url}/books/", headers=headers, params=params)
         if response.status_code != 200:
             raise Exception("Failed to fetch books: " + response.json().get("error", "Unknown error"))
         return response.json()
-    
-
-    def get_available_books(self, jwt: str):
-        headers = {"Authorization": f"{jwt}"}
-        response = requests.get(f"{self.base_url}/books/available", headers=headers)
-        if response.status_code != 200:
-            raise Exception("Failed to fetch books: " + response.json().get("error", "Unknown error"))
-        return response.json()
-    
-
-    def get_books_by_status(self, jwt: str, status: str):
-        headers = {"Authorization": f"{jwt}"}
-        response = requests.get(f"{self.base_url}/books/status/{status}", headers=headers)
-        if response.status_code != 200:
-            raise Exception("Failed to fetch books by status: " + response.json().get("error", "Unknown error"))
-        return response.json()
-    
     
     def create_order(self, jwt: str, orderlines: list):
         headers = {"Authorization": f"{jwt}"}
