@@ -1,5 +1,7 @@
 import FreeSimpleGUI as sg
 
+from frontend.screens.new_book import new_book_window
+
 def manager_books_window(state, api):
 
     def fetch_books(state, api, window=None, status="All", title_filter="", author_id_filter="", keywords_filter=""):
@@ -53,7 +55,7 @@ def manager_books_window(state, api):
         [sg.Button("Search")]
     ])
     buttons = [
-        sg.Button("Back")
+        sg.Button("Back"), sg.Button("Add New Book")
     ]
     book_details = sg.Frame("Book Details", [
         [sg.Text("ID:"), sg.Text("", key="book_id")],
@@ -99,6 +101,8 @@ def manager_books_window(state, api):
             print("Updating book...")
         elif event == "Delete Book":
             print("Deleting book...")
+        elif event == "Add New Book":
+            new_book_window(state=state, api=api)
 
 
     window.close()

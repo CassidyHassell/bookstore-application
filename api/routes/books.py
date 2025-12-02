@@ -135,10 +135,12 @@ def create_book(context):
     author_id = data.get("author_id", None)
     author_name = data.get("author_name", "Unknown Author")
     author_bio = data.get("author_bio", "No bio available")
+    keywords = data.get("keywords", [])
     price_buy = data.get("price_buy")
     price_rent = data.get("price_rent")
     description = data.get("description", None)
 
+    print(f"Creating book: {title}, Author ID: {author_id}, Author Name: {author_name}, Keywords: {keywords}")
     session = SessionLocal()
     try:
         if (author_id is None):
@@ -149,6 +151,27 @@ def create_book(context):
             author_id = new_author.id
         new_book = Book(title=title, author_id=author_id, price_buy=price_buy, price_rent=price_rent, description=description)
         session.add(new_book)
+        session.flush()  # Ensure new_book.id is available
+        # Attach keywords via the association table
+        for word in keywords:
+            word = (word or "").strip()
+            if not word:
+                continue
+
+            # Find existing Keyword or create a new one
+            keyword_obj = (
+                session.query(Keyword)
+                .filter(Keyword.word == word)
+                .one_or_none()
+            )
+            if keyword_obj is None:
+                keyword_obj = Keyword(word=word)
+                session.add(keyword_obj)
+                session.flush()
+
+            # Create the association row
+            bk = BookKeyword(book_id=new_book.id, keyword_id=keyword_obj.id)
+            session.add(bk)
         session.commit()
         return jsonify({"message": "Book created successfully", "book_id": new_book.id}), 201
     except Exception as e:
