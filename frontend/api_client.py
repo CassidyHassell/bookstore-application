@@ -69,3 +69,28 @@ class ApiClient:
         if response.status_code != 200:
             raise Exception("Failed to fetch book details: " + response.json().get("error", "Unknown error"))
         return response.json()
+    
+    def get_orders(self, jwt: str, status=None):
+        headers = {"Authorization": f"{jwt}"}
+        params = {}
+        if status is not None:
+            params["status"] = status
+        response = requests.get(f"{self.base_url}/orders/", headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch orders: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def get_order_details(self, jwt: str, order_id: int):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/orders/{order_id}", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch order details: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def update_order_status(self, jwt: str, order_id: int, new_status: str):
+        headers = {"Authorization": f"{jwt}"}
+        data = {"status": new_status}
+        response = requests.patch(f"{self.base_url}/orders/{order_id}/status", json=data, headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to update order status: " + response.json().get("error", "Unknown error"))
+        return response.json()
