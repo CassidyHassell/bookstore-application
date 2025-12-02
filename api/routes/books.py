@@ -181,6 +181,74 @@ def create_book(context):
         session.close()
 
 
+@books_bp.route("/<int:id>/update", methods=["PUT"])
+@token_required
+@role_required("Manager")
+def update_book(context, id):
+    data = request.json
+    title = data.get("title", None)
+    author_id = data.get("author_id", None)
+    price_buy = data.get("price_buy", None)
+    price_rent = data.get("price_rent", None)
+    description = data.get("description", None)
+    keywords = data.get("keywords", [])
+
+    session = SessionLocal()
+    try:
+        book = session.get(Book, id)
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+
+        if title is not None:
+            book.title = title
+        if author_id is not None:
+            book.author_id = author_id
+        if price_buy is not None:
+            book.price_buy = price_buy
+        if price_rent is not None:
+            book.price_rent = price_rent
+        if description is not None:
+            book.description = description
+
+        if keywords:
+            # Create list of current keyword words associated with the book
+            current_keywords = {bk.keyword.word: bk for bk in book.keywords}
+
+            # Remove associations for keywords no longer present only
+            for word, bk in current_keywords.items():
+                if word not in keywords:
+                    session.delete(bk)
+
+            # Add new keywords not in current associations
+            for word in keywords:
+                word = (word or "").strip()
+                if not word or (word in current_keywords):
+                    continue
+
+                # Find existing Keyword or create a new one
+                keyword_obj = (
+                    session.query(Keyword)
+                    .filter(Keyword.word == word)
+                    .one_or_none()
+                )
+                if keyword_obj is None:
+                    keyword_obj = Keyword(word=word)
+                    session.add(keyword_obj)
+                    session.flush()
+
+                # Create the association row
+                bk = BookKeyword(book_id=book.id, keyword_id=keyword_obj.id)
+                session.add(bk)
+
+        session.commit()
+        return jsonify({"message": "Book updated successfully"})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+
 # Update book status manually
 @books_bp.route("/<int:id>/status", methods=["PATCH"])
 @token_required

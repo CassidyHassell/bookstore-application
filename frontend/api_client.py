@@ -77,6 +77,13 @@ class ApiClient:
             raise Exception("Failed to add book: " + response.json().get("error", "Unknown error"))
         return response.json()
     
+    def update_book(self, jwt: str, book_id: int, data):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.put(f"{self.base_url}/books/{book_id}/update", json=data, headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to update book: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
     def get_orders(self, jwt: str, status=None):
         headers = {"Authorization": f"{jwt}"}
         params = {}
@@ -100,4 +107,11 @@ class ApiClient:
         response = requests.patch(f"{self.base_url}/orders/{order_id}/status", json=data, headers=headers)
         if response.status_code != 200:
             raise Exception("Failed to update order status: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def get_author_details(self, jwt: str, author_id: int):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/authors/{author_id}", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch author details: " + response.json().get("error", "Unknown error"))
         return response.json()
