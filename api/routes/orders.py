@@ -1,6 +1,6 @@
 # orders.py
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from sqlalchemy import or_, select
 from api.services.billing import generate_bill
 from api.auth import role_required, token_required
@@ -17,19 +17,30 @@ def get_orders(context):
     status = request.args.get("status")
     if status not in [None, "pending", "completed", "cancelled"]:
         return jsonify({"error": "Invalid status filter"}), 400
+    
+    page_number = request.args.get("page_number", 1, type=int)
+    page_size = request.args.get("page_size", 100, type=int)
     session = SessionLocal()
+
+    filters = []
     try:
         if status:
-            orders = session.query(Order).filter(Order.payment_status == status).all()
-        else:
-            orders = session.query(Order).all()
-
+            filters.append(Order.payment_status == status)
+        
+        orders = session.query(Order).order_by(Order.id).filter(*filters).offset((page_number - 1) * page_size).limit(page_size).all()
+    
         orders_list = []
         for o in orders:
             order_lines = [{"id": ol.id, "book_id": ol.book_id, "type": ol.type, "price": ol.price} for ol in o.order_lines]
             orders_list.append({"id": o.id, "user_id": o.user_id, "total_price": o.total_price, "payment_status": o.payment_status, "order_lines": order_lines, "order_date": o.order_date, "email_sent": o.email_sent})
 
-        return jsonify({"orders": orders_list})
+        return jsonify({"orders": orders_list, "page": {
+            "current_page": page_number,
+            "total_pages": (session.query(Order).filter(*filters).count() + page_size - 1) // page_size,
+        }})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
     finally:
         session.close()
 
@@ -48,6 +59,8 @@ def get_order_details(context, id):
         order_data = {"id": order.id, "user_id": order.user_id, "total_price": order.total_price, "payment_status": order.payment_status, "order_lines": order_lines, "order_date": order.order_date, "email_sent": order.email_sent}
 
         return jsonify(order_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         session.close()
 

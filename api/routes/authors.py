@@ -13,11 +13,16 @@ authors_bp = Blueprint("authors", __name__, url_prefix="/api/v1/authors")
 @token_required
 def get_authors(context):
     session = SessionLocal()
+    page_number = request.args.get("page_number", 1, type=int)
+    page_size = request.args.get("page_size", 100, type=int)
     try:
-        authors = session.query(Author).all()
+        authors = session.query(Author).order_by(Author.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
         authors_list = [{"id": a.id, "name": a.name, "bio": a.bio} for a in authors]
-        return jsonify({"authors": authors_list})
+        return jsonify({"authors": authors_list, "page": {
+            "current_page": page_number,
+            "total_pages": (session.query(Author).count() + page_size - 1) // page_size,
+        }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

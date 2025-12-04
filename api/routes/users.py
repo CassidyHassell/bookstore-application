@@ -19,11 +19,26 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 @role_required("Manager")
 def get_users(context):
     session = SessionLocal()
+    page_number = request.args.get("page_number", 1, type=int)
+    page_size = request.args.get("page_size", 100, type=int)
+    role = request.args.get("role", None)
+
+    filters = []
+
+    if role and role not in ["Customer", "Manager"]:
+        return jsonify({"error": "Invalid role filter"}), 400
+    
+    if role is not None:
+        filters.append(User.role == role)
+
     try:
-        users = session.query(User).all()
+        users = session.query(User).order_by(User.id).filter(*filters).offset((page_number - 1) * page_size).limit(page_size).all()
 
         users_list = [{"id": u.id, "username": u.username, "email": u.email, "role": u.role} for u in users]
-        return jsonify({"users": users_list})
+        return jsonify({"users": users_list, "page": {
+            "current_page": page_number,
+            "total_pages": (session.query(User).filter(*filters).count() + page_size - 1) // page_size,
+        }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

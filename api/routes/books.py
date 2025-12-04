@@ -15,7 +15,11 @@ def get_books(context):
     author_id = request.args.get("author_id", None)
     status = request.args.get("status", None)
     keyword = request.args.getlist("keyword", None)
-    print(f"Filters - author_id: {author_id}, status: {status}, keyword: {keyword}")
+    title_contains = request.args.get("title_contains", None)
+    page_number = request.args.get("page_number", 1, type=int)
+    page_size = request.args.get("page_size", 100, type=int)
+
+    print(f"Filters - author_id: {author_id}, status: {status}, keyword: {keyword}, title_contains: {title_contains}, page_number: {page_number}, page_size: {page_size}")
     session = SessionLocal()
     try:
         status = status.lower() if status else None
@@ -43,14 +47,18 @@ def get_books(context):
             # Join keywords when filtering by keyword; include other filters too
             query = query.join(Book.keywords).join(BookKeyword.keyword)
             books = query.filter(*(filters + [Keyword.word.in_(keyword)])).distinct().all()
+
+        elif title_contains:
+            filters.append(Book.title.ilike(f"%{title_contains}%"))
+
         else:
-            if filters:
-                books = query.filter(*filters).all()
-            else:
-                books = query.all()
+            books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
-        return jsonify({"books": books_list})
+        return jsonify({"books": books_list, "page": {
+            "current_page": page_number,
+            "total_pages": (session.query(Book).filter(*filters).count() + page_size - 1) // page_size,
+        }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -71,7 +79,6 @@ def get_book(context, id):
             print(kw)
         return jsonify({"id": book.id, "title": book.title, "status": book.status, "author": {"id": book.author.id, "name": book.author.name}, "keywords": keyword_list, "price_buy": book.price_buy, "price_rent": book.price_rent, "description": book.description})
     except Exception as e:
-        print(book.keywords)
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
