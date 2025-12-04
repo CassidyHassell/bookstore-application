@@ -139,9 +139,9 @@ def seed_initial_books(authors, count=1000000):
                 title = fake.sentence(nb_words=4).rstrip(".")
             description = fake.paragraph(nb_sentences=4)
 
-            # Generate random prices and add 99 cents
-            price_buy = Decimal(str(round(random.uniform(5, 50), 2))) + Decimal('0.99')
-            price_rent = Decimal(str(round(random.uniform(1, 10), 2))) + Decimal('0.99')
+            # Generate random int prices and add 99 cents
+            price_buy = Decimal(random.randint(5, 50)) + Decimal('0.99')
+            price_rent = Decimal(random.randint(1, 10)) + Decimal('0.99')
 
             books_batch.append(Book(
                 author_id=author.id,
