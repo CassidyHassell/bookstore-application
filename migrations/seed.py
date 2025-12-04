@@ -131,8 +131,9 @@ def seed_initial_books(authors, count=1000000):
                 title = fake.sentence(nb_words=4).rstrip(".")
             description = fake.paragraph(nb_sentences=4)
 
-            price_buy = Decimal(str(round(random.uniform(5, 50), 2)))
-            price_rent = Decimal(str(round(random.uniform(1, 10), 2)))
+            # Generate random int prices within reasonable ranges and add 99 cents
+            price_buy = Decimal(str(round(random.uniform(5, 50), 2))) + Decimal('0.99')
+            price_rent = Decimal(str(round(random.uniform(1, 10), 2))) + Decimal('0.99')
 
             book = Book(
                 author_id=author.id,
@@ -188,12 +189,12 @@ def seed_initial_book_keywords(books, keywords):
         session = SessionLocal()
         for book in books:
             print(f"Seeding keywords for book id {book.id}")
-            num_keywords = fake.random_int(min=1, max=5)
+            num_keywords = fake.random_int(min=1, max=4)
             available = len(keywords) if keywords else 0
             if available == 0:
                 continue
             take = min(num_keywords, available)
-            
+
             # Use random.sample to pick unique keywords safely
             try:
                 selected_keywords = random.sample(keywords, k=take)
