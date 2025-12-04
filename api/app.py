@@ -1,10 +1,10 @@
 # app.py
 
 from flask import Flask
-from routes.books import books_bp
-from routes.users import users_bp
-from routes.authors import authors_bp
-from routes.orders import orders_bp
+from api.routes.books import books_bp
+from api.routes.users import users_bp
+from api.routes.authors import authors_bp
+from api.routes.orders import orders_bp
 
 app = Flask(__name__)
 

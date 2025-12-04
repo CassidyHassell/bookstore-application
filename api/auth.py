@@ -3,9 +3,9 @@ from functools import wraps
 
 from flask import jsonify, request
 import jwt
-from db import SessionLocal
-from config import Config
-from models import User
+from utils.db import SessionLocal
+from utils.config import Config
+from utils.models import User
 
 
 def token_required(func):
