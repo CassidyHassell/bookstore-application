@@ -1,11 +1,13 @@
 import FreeSimpleGUI as sg
+from frontend.screens.registration import registration_window
+
 
 def login_window(state, api):
     layout = [
         [sg.Text("Username"), sg.Input(key="username")],
         [sg.Text("Password"), sg.Input(password_char="*", key="password")],
         [sg.Text("", key="error", text_color="red")],
-        [sg.Button("Login"), sg.Button("Cancel")],
+        [sg.Button("Login"),sg.Button("Register New Account"), sg.Button("Cancel")],
     ]
 
     window = sg.Window("Login", layout)
@@ -37,6 +39,10 @@ def login_window(state, api):
             state.role = resp.get("role")
             success = True
             break
+        elif event == "Register New Account":
+            window.disappear()
+            registration_window(state, api)
+            window.reappear()
             
     window.close()
 

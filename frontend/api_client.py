@@ -18,6 +18,20 @@ class ApiClient:
             "role": role
         }
     
+    def register(self, username: str, password: str, email: str, first_name: str, last_name: str, role: str) -> dict:
+        response = requests.post(f"{self.base_url}/users/register", json={
+            "username": username,
+            "password": password,
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": role
+        })
+        if response.status_code != 200 and response.status_code != 201:
+            raise Exception("Registration failed: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+
     def get_books(self, jwt: str, author_id=None, status=None, keyword=None):
         headers = {"Authorization": f"{jwt}"}
         params = {}
