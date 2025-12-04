@@ -1,5 +1,5 @@
 import requests
-from .utils import decode_token
+from utils.config import decode_token
 
 class ApiClient:
     def __init__(self, base_url: str):

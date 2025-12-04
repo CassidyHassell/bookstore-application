@@ -2,10 +2,10 @@
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import or_, select
-from services.billing import generate_bill
-from auth import role_required, token_required
-from db import SessionLocal
-from models import Author, Book, Order, OrderLine, User
+from api.services.billing import generate_bill
+from api.auth import role_required, token_required
+from utils.db import SessionLocal
+from utils.models import Author, Book, Order, OrderLine, User
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/v1/orders")
 

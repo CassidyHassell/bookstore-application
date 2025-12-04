@@ -2,9 +2,9 @@
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy import or_, select
-from auth import role_required, token_required
-from db import SessionLocal
-from models import Author, Book
+from api.auth import role_required, token_required
+from utils.db import SessionLocal
+from utils.models import Author, Book
 
 authors_bp = Blueprint("authors", __name__, url_prefix="/api/v1/authors")
 

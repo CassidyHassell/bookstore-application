@@ -4,10 +4,10 @@ import datetime
 import bcrypt
 from flask import Blueprint, jsonify, request
 from sqlalchemy import select
-from auth import role_required, token_required
-from db import SessionLocal
-from models import User
-from config import Config
+from api.auth import role_required, token_required
+from utils.db import SessionLocal
+from utils.models import User
+from utils.config import Config
 # from auth import current_user
 import jwt
 
