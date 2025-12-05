@@ -13,6 +13,10 @@ class Config:
     DB_PASSWORD_SAFE = quote_plus(DB_PASSWORD)
     JWT_SECRET_KEY = os.getenv('JWT_SECRET')
     SQLALCHEMY_DATABASE_URI = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD_SAFE}@{DB_HOST}/{DB_NAME}"
+    SMTP_SERVER = os.getenv('SMTP_SERVER')
+    SMTP_PORT = int(os.getenv('SMTP_PORT'))
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME')
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 
 def decode_token(token):
     return jwt.decode(token, Config.JWT_SECRET_KEY, algorithms=["HS256"])
