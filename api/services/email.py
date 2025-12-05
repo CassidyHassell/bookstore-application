@@ -16,18 +16,3 @@ def send_email(recipient, subject, html_body):
     except Exception as e:
         print(f"Failed to send email to {recipient}: {e}")
         return False
-
-# Looking to send emails in production? Check out our Email API/SMTP product!
-# import smtplib
-
-# sender = "Private Person <from@example.com>"
-# receiver = "A Test User <to@example.com>"
-
-# message = f"""\
-# Subject: Hi Mailtrap
-# To: {receiver}
-# From: {sender}
-
-# This is a test e-mail message."""
-
-#     server.sendmail(sender, receiver, message)
