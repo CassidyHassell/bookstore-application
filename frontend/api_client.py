@@ -33,9 +33,30 @@ class ApiClient:
             raise Exception("Registration failed: " + response.json().get("error", "Unknown error"))
         return response.json()
     
+    # USERS
+    def get_users(self, jwt: str, role=None, page_number=1, page_size=100):
+        headers = {"Authorization": f"{jwt}"}
+        params = {
+            "page_number": page_number,
+            "page_size": page_size
+        }
+        if role is not None:
+            params["role"] = role
+        response = requests.get(f"{self.base_url}/users/", headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch users: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
+    def get_user_details(self, jwt: str, user_id: int):
+        headers = {"Authorization": f"{jwt}"}
+        response = requests.get(f"{self.base_url}/users/{user_id}", headers=headers)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch user details: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
 
     # BOOKS
-    def get_books(self, jwt: str, author_id=None, status=None, keyword=None):
+    def get_books(self, jwt: str, author_id=None, status=None, keyword=None, title_contains=None, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {}
         if author_id is not None:
@@ -44,6 +65,10 @@ class ApiClient:
             params["status"] = status
         if keyword is not None:
             params["keyword"] = keyword 
+        if title_contains is not None:
+            params["title_contains"] = title_contains
+        params["page_number"] = page_number
+        params["page_size"] = page_size
         response = requests.get(f"{self.base_url}/books/", headers=headers, params=params)
         if response.status_code != 200:
             raise Exception("Failed to fetch books: " + response.json().get("error", "Unknown error"))
@@ -86,11 +111,13 @@ class ApiClient:
     
 
     # ORDERS
-    def get_orders(self, jwt: str, status=None):
+    def get_orders(self, jwt: str, status=None, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {}
         if status is not None:
             params["status"] = status
+        params["page_number"] = page_number
+        params["page_size"] = page_size
         response = requests.get(f"{self.base_url}/orders/", headers=headers, params=params)
         if response.status_code != 200:
             raise Exception("Failed to fetch orders: " + response.json().get("error", "Unknown error"))
@@ -130,6 +157,17 @@ class ApiClient:
     
 
     # AUTHORS
+    def get_authors(self, jwt: str, page_number=1, page_size=100):
+        headers = {"Authorization": f"{jwt}"}
+        params = {
+            "page_number": page_number,
+            "page_size": page_size
+        }
+        response = requests.get(f"{self.base_url}/authors/", headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception("Failed to fetch authors: " + response.json().get("error", "Unknown error"))
+        return response.json()
+    
     def get_author_details(self, jwt: str, author_id: int):
         headers = {"Authorization": f"{jwt}"}
         response = requests.get(f"{self.base_url}/authors/{author_id}", headers=headers)
