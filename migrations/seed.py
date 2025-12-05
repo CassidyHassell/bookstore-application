@@ -404,12 +404,17 @@ def empty_all_tables():
 
 def seed_all():
     empty_all_tables()
-    seed_initial_users(count=1000)
-    authors = seed_initial_authors(count=5000)
-    books = seed_initial_books(authors=authors, count=10000)
+    seed_initial_users(count=10000)
+    authors = seed_initial_authors(count=50000)
+    books = seed_initial_books(authors=authors, count=1000000)
     keywords = seed_initial_keywords()
     seed_initial_book_keywords()
-    seed_initial_orders_with_lines(count=7500)
+    seed_initial_orders_with_lines(count=15000)
 
 if __name__ == "__main__":
-    seed_all()
+    # Get user input to confirm seeding
+    confirm = input("This will erase all existing data and seed the database. Type 'YES' to continue: ")
+    if confirm == 'YES':
+        print("Starting database seeding...")
+        seed_all()
+        print("Database seeding completed.")
