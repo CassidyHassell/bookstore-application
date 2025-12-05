@@ -167,7 +167,7 @@ def catalog_window(state, api):
             else:
                 window["Buy Books"].update(disabled=False)
                 window["Rent Books"].update(disabled=False)
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
 
         if event == "View Rented Books":
             customer_rents_window(state, api)

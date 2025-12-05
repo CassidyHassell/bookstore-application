@@ -124,7 +124,7 @@ def manager_books_window(state, api):
             print("Searching books...")
             current_page = 1
             pagination_controls.set_current_page(1)
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
         
         if event == "Update Book":
             print("Updating book...")
