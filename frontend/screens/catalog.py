@@ -2,6 +2,7 @@ import FreeSimpleGUI as sg
 
 from frontend.screens.customer_rents import customer_rents_window
 from frontend.pagination import PaginationControls
+from frontend.screens.login import login_window
 
 orderlines = []
 current_page = 1
@@ -91,12 +92,17 @@ def catalog_window(state, api):
     while True:
         event, values = window.read()
 
-        if event == sg.WINDOW_CLOSED or event == "Logout":
+        if event == sg.WINDOW_CLOSED:
+            break
+        
+        if event == "Logout":
             # Clear state on logout
             state.jwt = None
             state.user_id = None
             state.role = None
-            break
+            window.close()
+            login_window(state, api)
+            return
 
         current_page = pagination_controls.handle_event(event, values)
         if current_page is not None:
@@ -143,7 +149,6 @@ def catalog_window(state, api):
                 sg.popup_error(f"Error during checkout: {e}")
 
         if event == "Search":
-            title = values["title_search"].lower()
             current_page = 1
             pagination_controls.set_current_page(1)
             if values["status_search"] == "Rented":

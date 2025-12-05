@@ -44,6 +44,19 @@ def login_window(state, api):
             registration_window(state, api)
             window.reappear()
             
+    if not success:
+        state.jwt = None
+        state.user_id = None
+        state.role = None
+    else:
+        if (state.role).lower() == "manager":
+            from frontend.screens.manager import manager_window
+            window.close()
+            manager_window(state, api)
+        else:
+            from frontend.screens.catalog import catalog_window
+            window.close()
+            catalog_window(state, api)
     window.close()
 
     return success

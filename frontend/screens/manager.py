@@ -1,5 +1,6 @@
 import FreeSimpleGUI as sg
 
+from frontend.screens.login import login_window
 from frontend.screens.manager_books import manager_books_window
 from frontend.screens.manager_orders import manager_orders_window
 from frontend.screens.registration import registration_window
@@ -18,12 +19,20 @@ def manager_window(state, api):
 
     while True:
         event, values = window.read()
-        if event == sg.WINDOW_CLOSED or event == "Logout":
+        if event == sg.WINDOW_CLOSED:
             # Clear state on logout
             state.jwt = None
             state.user_id = None
             state.role = None
             break
+        if event == "Logout":
+            # Clear state on logout
+            state.jwt = None
+            state.user_id = None
+            state.role = None
+            window.close()
+            login_window(state, api)
+            return
         elif event == "Manage Books":
             manager_books_window(state, api)
         elif event == "View Orders":
