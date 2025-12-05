@@ -1,15 +1,14 @@
 import FreeSimpleGUI as sg
+from frontend.async_wrapper import run_in_background
 
 def customer_rents_window(state, api):
     
-    def fetch_rented_books(state, api, window=None):
+    def fetch_rented_books(state, api):
         try:
             resp = api.get_user_rented_books(state.jwt)
             rented = resp.get("books", [])
             for book in rented:
                 resp = api.get_book_details(state.jwt, book['id'])
-                book.update(resp)
-            window["rent_list"].update(values=[f"{b['id']}: {b['title']}" for b in rented])
             return rented
         except Exception as e:
             print(f"Error fetching rented books: {e}")
@@ -22,13 +21,14 @@ def customer_rents_window(state, api):
         [sg.Button("Return Selected Books"), sg.Button("Close")]
     ]
     window = sg.Window("Customer Rentals", layout, finalize=True)
-    rented = fetch_rented_books(state, api, window)
+    rented = run_in_background(window, "-RENTED_BOOKS_LOADED-", fetch_rented_books, state, api)
 
     while True:
         event, values = window.read()
         if event == sg.WINDOW_CLOSED or event == "Close":
             break
-        elif event == "Return Selected Books":
+        
+        if event == "Return Selected Books":
             selected_books = values["rent_list"]
             if not selected_books:
                 sg.popup_error("Please select books to return.")
@@ -44,7 +44,16 @@ def customer_rents_window(state, api):
             if success:
                 sg.popup("Selected books returned successfully.")
             # Refresh the rented books list
-            rented = fetch_rented_books(state, api, window=window)
+            run_in_background(window, "-RENTED_BOOKS_LOADED-", fetch_rented_books, state, api)
+        
+        if event == "-RENTED_BOOKS_LOADED-":
+            payload = values[event]
+            if payload["ok"]:
+                rented = payload["result"]
+            else:
+                rented = []
+            print(f"Rented books updated: {rented}")
+            window["rent_list"].update([f"{b['id']}: {b['title']}" for b in rented])
             
                 
     window.close()

@@ -2,6 +2,7 @@ import FreeSimpleGUI as sg
 
 from frontend.pagination import PaginationControls
 from frontend.screens.new_book import new_book_window
+from frontend.async_wrapper import run_in_background
 
 current_page = 1
 PAGE_SIZE = 100
@@ -10,7 +11,7 @@ def manager_books_window(state, api):
 
     pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
 
-    def fetch_books(state, api, window=None, status="All", title_filter="", author_id_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE):
+    def fetch_books(state, api, status="All", title_filter="", author_id_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE):
         try:
             status = status if status in ["All", "Available", "New", "Used", "Sold", "Rented"] else "All"
             status = status.lower()
@@ -27,10 +28,6 @@ def manager_books_window(state, api):
         except Exception as e:
             print(f"Error fetching books: {e}")
             books = []
-        if window:
-            # Update the book list in the window
-            window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books])
-
         return books
     
     def load_book_details(state, api, book_id, window=None):
@@ -104,7 +101,7 @@ def manager_books_window(state, api):
     pagination_controls.attach_window(window)
 
     # Initial fetch of books
-    fetch_books(state, api, window=window)
+    run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api)
 
     while True:
         event, values = window.read()
@@ -120,15 +117,15 @@ def manager_books_window(state, api):
         current_page = pagination_controls.handle_event(event, values)
         if current_page is not None:
             # Fetch books for the new page with current filters
-            books = fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
 
-        elif event == "Search":
+        if event == "Search":
             print("Searching books...")
             current_page = 1
             pagination_controls.set_current_page(1)
-            fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
         
-        elif event == "Update Book":
+        if event == "Update Book":
             print("Updating book...")
 
             # Validate fields
@@ -150,17 +147,17 @@ def manager_books_window(state, api):
             }
             update_book(state, api, int(window["book_id"].get()), details, window=window)
             # Refresh book list after update
-            fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
 
-        elif event == "Delete Book":
+        if event == "Delete Book":
             print("Deleting book...")
         
-        elif event == "Add New Book":
+        if event == "Add New Book":
             new_book_window(state=state, api=api)
             # Refresh book list after adding new book
-            fetch_books(state, api, window=window, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
         
-        elif event == "book_author_id":
+        if event == "book_author_id":
             author_id_input = values["book_author_id"].strip()
             if author_id_input:
                 try:
@@ -174,5 +171,13 @@ def manager_books_window(state, api):
                 except Exception as e:
                     print(f"Error fetching author details: {e}")
                     window["book_author_name"].update("No author found", text_color="red")
+
+        if event == "-BOOKS_LOADED-":
+            payload = values[event]
+            if payload["ok"]:
+                books = payload["result"]
+            else:
+                books = []
+            window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books])
 
     window.close()

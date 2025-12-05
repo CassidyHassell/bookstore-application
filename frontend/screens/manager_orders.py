@@ -1,7 +1,7 @@
 import FreeSimpleGUI as sg
 
 from frontend.pagination import PaginationControls
-from frontend.screens.new_book import new_book_window
+from frontend.async_wrapper import run_in_background
 
 current_page = 1
 PAGE_SIZE = 100
@@ -10,7 +10,7 @@ def manager_orders_window(state, api):
 
     pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
 
-    def fetch_orders(state, api, window=None, status_filter="All", page=1, page_size=PAGE_SIZE):
+    def fetch_orders(state, api, status_filter="All", page=1, page_size=PAGE_SIZE):
         try:
             status = status_filter if status_filter in ["All", "Pending", "Completed", "Cancelled"] else "All"
             status = status.lower()
@@ -21,14 +21,11 @@ def manager_orders_window(state, api):
             orders = resp.get("orders", [])
             total_pages = resp.get("page", None).get("total_pages", 1)
             pagination_controls.update_total_pages(total_pages)
-
         except Exception as e:
             print(f"Error fetching orders: {e}")
             orders = []
-        if window:
-            # Update the orders list in the window
-            window["orders_list"].update(values=[f"Order ID: {o['id']} | Date: {o['order_date']} | Status: {o['payment_status']}" for o in orders])
-    
+        return orders
+        
     def fetch_order_details(state, api, order_id, window=None):
         try:
             resp = api.get_order_details(state.jwt, order_id)
@@ -69,7 +66,7 @@ def manager_orders_window(state, api):
     window = sg.Window("Manager Orders Dashboard", layout, finalize=True)
     pagination_controls.attach_window(window)
 
-    fetch_orders(state, api, window=window)
+    run_in_background(window, "-ORDERS_LOADED-", fetch_orders, state, api)
 
     while True:
         event, values = window.read()
@@ -78,17 +75,17 @@ def manager_orders_window(state, api):
 
         current_page = pagination_controls.handle_event(event, values)
         if current_page is not None:
-            fetch_orders(state, api, window=window, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-ORDERS_LOADED-", fetch_orders, state, api, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
 
-        elif event == "orders_list":
+        if event == "orders_list":
             fetch_order_details(state, api, int(values["orders_list"][0].split("|")[0].split(":")[1].strip()), window=window)
         
-        elif event == "Filter":
+        if event == "Filter":
             current_page = 1
             pagination_controls.set_current_page(1)
-            fetch_orders(state, api, window=window, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-ORDERS_LOADED-", fetch_orders, state, api, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
             
-        elif event == "Mark Paid":
+        if event == "Mark Paid":
             if not window["order_id"].get():
                 sg.popup_error("Please select an order to mark as paid.")
                 continue
@@ -101,7 +98,15 @@ def manager_orders_window(state, api):
                 sg.popup_error(f"Error updating order status: {resp_json.get('error')}")
             else:
                 sg.popup("Order marked as paid successfully.")
-                fetch_orders(state, api, window=window, status_filter=values["order_status_filter"])
+                run_in_background(window, "-ORDERS_LOADED-", fetch_orders, state, api, status_filter=values["order_status_filter"])
                 fetch_order_details(state, api, order_id, window=window)
 
+        if event == "-ORDERS_LOADED-":
+            payload = values[event]
+            if payload["ok"]:
+                orders = payload["result"]
+            else:
+                orders = []
+            window["orders_list"].update(values=[f"Order ID: {o['id']} | Date: {o['order_date']} | Status: {o['payment_status']}" for o in orders])
+    
     window.close()
