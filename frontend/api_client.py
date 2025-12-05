@@ -132,19 +132,16 @@ class ApiClient:
     
     def create_order(self, jwt: str, orderlines: list):
         headers = {"Authorization": f"{jwt}"}
-        print(f"{orderlines}")
         data = {
             "order_lines": orderlines
         }
         response = requests.post(f"{self.base_url}/orders/create_order", json=data, headers=headers)
         if response.status_code != 200 and response.status_code != 201:
             try:
-                print(response.json())
                 raise Exception("Failed to create order: " + response.json().get("error", "Unknown error"))
             except Exception as e:
                 raise Exception(str(response.status_code) + " " + str(e))
             
-        print(response.json())
         return response.json()
     
     def update_order_status(self, jwt: str, order_id: int, new_status: str):

@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request, session
 from sqlalchemy import or_, select
 from api.services.billing import generate_bill
 from api.auth import role_required, token_required
+from api.services.email import send_email
 from utils.db import SessionLocal
 from utils.models import Author, Book, Order, OrderLine, User
 
@@ -99,9 +100,13 @@ def create_order(context):
             new_order_line = OrderLine(order_id=new_order.id, book_id=ol_data['book_id'], type=ol_data['type'], price=ol_data['price'])
             session.add(new_order_line)
 
-        session.commit()
         # Generate bill after order creation
         bill_html = generate_bill(new_order, new_order.order_lines)
+        user_email = session.get(User, user_id).email
+        email_status = send_email(user_email, "Your Order Bill", bill_html)
+        new_order.email_sent = email_status
+        session.commit()
+        
         return jsonify({"message": "Order created successfully", "order_id": new_order.id, "bill": bill_html}), 201
     except Exception as e:
         session.rollback()

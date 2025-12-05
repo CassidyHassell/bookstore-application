@@ -1,7 +1,9 @@
-<h1>Order #{{ order.id }}</h1>
-<ul>
-  {% for line in order_lines %}
-    <li>{{ line.book.title }} ({{ line.type }}) - ${{ line.price }}</li>
-  {% endfor %}
-</ul>
-<p>Total: ${{ order.total_price }}</p>
+<html>
+  <h1>Order #{{ order.id }}</h1>
+  <ul>
+    {% for line in order_lines %}
+      <li>{{ line.book.title }} ({{ line.type }}) - ${{ line.price }}</li>
+    {% endfor %}
+  </ul>
+  <p>Total: ${{ order.total_price }}</p>
+</html>

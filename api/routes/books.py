@@ -46,13 +46,12 @@ def get_books(context):
         if keyword:
             # Join keywords when filtering by keyword; include other filters too
             query = query.join(Book.keywords).join(BookKeyword.keyword)
-            books = query.filter(*(filters + [Keyword.word.in_(keyword)])).distinct().all()
+            filters.append(Keyword.word.in_(keyword))
 
         elif title_contains:
             filters.append(Book.title.ilike(f"%{title_contains}%"))
-
-        else:
-            books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
+        
+        books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
         return jsonify({"books": books_list, "page": {
@@ -125,7 +124,7 @@ def get_user_rented_books(context):
         # Fetch rented books for the user from orders with user_id, order_line with type 'rent', and books with status 'rented'
         books = session.query(Book).join(OrderLine).join(Order).filter(Order.user_id == user_id, OrderLine.type == 'rent', Book.status == 'rented').all()
         
-        books_list = [{"id": b.id} for b in books]
+        books_list = [{"id": b.id, "title": b.title} for b in books]
         return jsonify({"books": books_list})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

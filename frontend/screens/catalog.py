@@ -149,7 +149,6 @@ def catalog_window(state, api):
             try:
                 resp = api.create_order(state.jwt, orderlines=orderlines)
                 sg.popup("Order Successful", f"Order ID: {resp.get('order_id')}")
-                sg.popup(resp.get('bill'))
                 orderlines.clear()
                 # Refresh the book list after checkout
                 run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
@@ -179,7 +178,6 @@ def catalog_window(state, api):
 
         if event == "book_list":
             selected = values["book_list"]
-            print(f"Selected books: {selected}")
             if selected:
                 book_id = int(selected[0].split(":")[0])
                 if book_id:
