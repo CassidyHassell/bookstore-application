@@ -9,7 +9,7 @@ state = AppState()
 api = ApiClient(base_url="http://127.0.0.1:5000/api/v1")
 
 def main():
-    sg.theme("LightBlue2")
+    sg.theme("LightGreen3")
     login_data = login_window(state=state, api=api)
 
     if login_data is None:
