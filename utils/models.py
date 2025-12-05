@@ -44,6 +44,11 @@ class Author(Base):
 
     books = sqlalchemy.orm.relationship("Book", back_populates="author")
 
+    # indexing on name
+    __table_args__ = (
+        sqlalchemy.Index('idx_authors_name', 'name'),
+    )
+
 
 # CREATE TABLE books (
 #     id int PRIMARY KEY AUTO_INCREMENT,
@@ -72,6 +77,13 @@ class Book(Base):
     keywords = sqlalchemy.orm.relationship("BookKeyword", back_populates="book")
     order_lines = sqlalchemy.orm.relationship("OrderLine", back_populates="book")
 
+    # indexing on title and status and author_id
+    __table_args__ = (
+        sqlalchemy.Index('idx_books_title', 'title'),
+        sqlalchemy.Index('idx_books_status', 'status'),
+        sqlalchemy.Index('idx_books_author_id', 'author_id'),
+    )
+
 # CREATE TABLE keywords (
 #     id int PRIMARY KEY AUTO_INCREMENT,
 #     word varchar(50) UNIQUE NOT NULL
@@ -83,6 +95,10 @@ class Keyword(Base):
     word = Column(String(50), unique=True, nullable=False)
 
     books = sqlalchemy.orm.relationship("BookKeyword", back_populates="keyword")
+    # indexing on word
+    __table_args__ = (
+        sqlalchemy.Index('idx_keywords_word', 'word'), 
+    )
 
 
 # CREATE TABLE book_keywords (
@@ -123,6 +139,12 @@ class Order(Base):
 
     user = sqlalchemy.orm.relationship("User", back_populates="orders")
     order_lines = sqlalchemy.orm.relationship("OrderLine", back_populates="order")
+
+    # indexing on payment_status and user_id
+    __table_args__ = (
+        sqlalchemy.Index('idx_orders_payment_status', 'payment_status'),
+        sqlalchemy.Index('idx_orders_user_id', 'user_id'),
+    )
 
 
 # CREATE TABLE order_lines (

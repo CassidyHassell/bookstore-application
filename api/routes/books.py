@@ -1,7 +1,7 @@
 # books.py
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, func, distinct
 from api.auth import role_required, token_required
 from utils.db import SessionLocal
 from utils.models import Author, Book, BookKeyword, Keyword, Order, OrderLine
@@ -44,23 +44,37 @@ def get_books(context):
         if status:
             filters.append(Book.status.in_(status))
 
+        # Require that a book matches ALL provided keywords.
+        # Build a grouped subquery over the association table and keywords
+        # and require the matched keyword count equals the number of keywords.
         if keyword:
-            # Join keywords when filtering by keyword; include other filters too
-            query = query.join(Book.keywords).join(BookKeyword.keyword)
-            filters.append(Keyword.word.in_(keyword))
+            kw_subq = (
+                session.query(BookKeyword.book_id)
+                .join(Keyword, BookKeyword.keyword_id == Keyword.id)
+                .filter(Keyword.word.in_(keyword))
+                .group_by(BookKeyword.book_id)
+                .having(func.count(distinct(Keyword.id)) == len(keyword))
+                .subquery()
+            )
 
-        elif title_contains:
+            filters.append(Book.id.in_(kw_subq))
+            print(f"Filtering by keywords (all required) via grouped subquery: {keyword}")
+
+        if title_contains:
             filters.append(Book.title.ilike(f"%{title_contains}%"))
         
+        # Build an ID-only base query for pagination and counting
         base = session.query(Book.id).filter(*filters).order_by(Book.id)
         if include_total:
             total_count = base.count()
 
         ids_subquery = base.offset((page_number - 1) * page_size).limit(page_size).subquery()
 
+        # Fetch full Book rows for the page via the ID subquery join
         books = (
             session.query(Book)
-            .join(ids_subquery, Book.id == ids_subquery.c.id).all()
+            .join(ids_subquery, Book.id == ids_subquery.c.id)
+            .all()
         )
         # books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
