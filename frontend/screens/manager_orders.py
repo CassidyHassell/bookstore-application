@@ -1,15 +1,26 @@
 import FreeSimpleGUI as sg
 
+from frontend.pagination import PaginationControls
+from frontend.screens.new_book import new_book_window
+
+current_page = 1
+PAGE_SIZE = 100
+
 def manager_orders_window(state, api):
-    def fetch_orders(state, api, window=None, status_filter="All"):
+
+    pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
+
+    def fetch_orders(state, api, window=None, status_filter="All", page=1, page_size=PAGE_SIZE):
         try:
             status = status_filter if status_filter in ["All", "Pending", "Completed", "Cancelled"] else "All"
             status = status.lower()
             if status == "all":
                 status = None
             
-            resp = api.get_orders(state.jwt, status=status)
+            resp = api.get_orders(state.jwt, status=status, page_number=page, page_size=page_size)
             orders = resp.get("orders", [])
+            total_pages = resp.get("page", None).get("total_pages", 1)
+            pagination_controls.update_total_pages(total_pages)
 
         except Exception as e:
             print(f"Error fetching orders: {e}")
@@ -46,7 +57,8 @@ def manager_orders_window(state, api):
         [sg.Listbox(values=[], size=(40, 10), key="order_lines_list")],
     ])
     orders_layout = sg.Frame("Orders", [
-        [sg.Listbox(values=[], size=(50, 15), key="orders_list", select_mode=sg.LISTBOX_SELECT_MODE_SINGLE, enable_events=True)]
+        [sg.Listbox(values=[], size=(50, 15), key="orders_list", select_mode=sg.LISTBOX_SELECT_MODE_SINGLE, enable_events=True)],
+        pagination_controls.get_layout()
     ])
     layout = [
         [options],
@@ -55,6 +67,7 @@ def manager_orders_window(state, api):
     ]
 
     window = sg.Window("Manager Orders Dashboard", layout, finalize=True)
+    pagination_controls.attach_window(window)
 
     fetch_orders(state, api, window=window)
 
@@ -62,10 +75,19 @@ def manager_orders_window(state, api):
         event, values = window.read()
         if event == sg.WINDOW_CLOSED or event == "Back":
             break
+
+        current_page = pagination_controls.handle_event(event, values)
+        if current_page is not None:
+            fetch_orders(state, api, window=window, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
+
         elif event == "orders_list":
             fetch_order_details(state, api, int(values["orders_list"][0].split("|")[0].split(":")[1].strip()), window=window)
+        
         elif event == "Filter":
-            fetch_orders(state, api, window=window, status_filter=values["order_status_filter"])
+            current_page = 1
+            pagination_controls.set_current_page(1)
+            fetch_orders(state, api, window=window, status_filter=values["order_status_filter"], page=current_page, page_size=PAGE_SIZE)
+            
         elif event == "Mark Paid":
             if not window["order_id"].get():
                 sg.popup_error("Please select an order to mark as paid.")

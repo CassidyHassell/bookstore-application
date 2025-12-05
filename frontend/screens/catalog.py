@@ -145,6 +145,7 @@ def catalog_window(state, api):
         if event == "Search":
             title = values["title_search"].lower()
             current_page = 1
+            pagination_controls.set_current_page(1)
             if values["status_search"] == "Rented":
                 window["Buy Books"].update(disabled=True)
                 window["Rent Books"].update(disabled=True)
