@@ -21,6 +21,7 @@ def get_orders(context):
     
     page_number = request.args.get("page_number", 1, type=int)
     page_size = request.args.get("page_size", 100, type=int)
+    include_total = request.args.get("include_total", "false").lower() == "true"
     session = SessionLocal()
 
     filters = []
@@ -35,10 +36,16 @@ def get_orders(context):
             order_lines = [{"id": ol.id, "book_id": ol.book_id, "type": ol.type, "price": ol.price} for ol in o.order_lines]
             orders_list.append({"id": o.id, "user_id": o.user_id, "total_price": o.total_price, "payment_status": o.payment_status, "order_lines": order_lines, "order_date": o.order_date, "email_sent": o.email_sent})
 
-        return jsonify({"orders": orders_list, "page": {
-            "current_page": page_number,
-            "total_pages": (session.query(Order).filter(*filters).count() + page_size - 1) // page_size,
-        }})
+        if include_total:
+            total_count = session.query(Order).filter(*filters).count()
+            return jsonify({"orders": orders_list, "page": {
+                "current_page": page_number,
+                "total_pages": (total_count + page_size - 1) // page_size,
+            }})
+        else:
+            return jsonify({"orders": orders_list, "page": {
+                "current_page": page_number
+            }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     

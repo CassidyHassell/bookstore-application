@@ -7,7 +7,7 @@ from frontend.async_wrapper import run_in_background
 
 orderlines = []
 current_page = 1
-PAGE_SIZE = 100
+PAGE_SIZE = 30
 
 def catalog_window(state, api):
 
@@ -15,7 +15,7 @@ def catalog_window(state, api):
 
     def fetch_books(state, api, status="Available", title_filter="",
                 author_id_filter="", keywords_filter="",
-                page=1, page_size=PAGE_SIZE):
+                page=1, page_size=PAGE_SIZE, include_total=False):
         try:
             status = status if status in ["Available", "New", "Used", "Rented"] else "Available"
             status = status.lower()
@@ -32,12 +32,14 @@ def catalog_window(state, api):
                 keyword=keywords_filter.split(",") if keywords_filter else None,
                 page_number=page,
                 page_size=page_size,
+                include_total=include_total
             )
 
             books = resp.get("books", [])
             page_info = resp.get("page") or {}
             total_pages = page_info.get("total_pages", 1)
-            pagination_controls.update_total_pages(total_pages)
+            if include_total:
+                pagination_controls.update_total_pages(total_pages)
 
             return books
         except Exception as e:
@@ -96,7 +98,7 @@ def catalog_window(state, api):
     window = sg.Window("Catalog", layout, finalize=True)
     pagination_controls.attach_window(window)
     # Fetch initial book list
-    run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api)
+    run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True)
 
     while True:
         event, values = window.read()

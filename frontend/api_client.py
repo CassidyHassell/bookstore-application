@@ -33,12 +33,14 @@ class ApiClient:
             raise Exception("Registration failed: " + response.json().get("error", "Unknown error"))
         return response.json()
     
+    
     # USERS
-    def get_users(self, jwt: str, role=None, page_number=1, page_size=100):
+    def get_users(self, jwt: str, role=None, include_total=False, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {
             "page_number": page_number,
-            "page_size": page_size
+            "page_size": page_size,
+            "include_total": str(include_total).lower()
         }
         if role is not None:
             params["role"] = role
@@ -56,7 +58,7 @@ class ApiClient:
     
 
     # BOOKS
-    def get_books(self, jwt: str, author_id=None, status=None, keyword=None, title_contains=None, page_number=1, page_size=100):
+    def get_books(self, jwt: str, author_id=None, status=None, keyword=None, title_contains=None, include_total=False, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {}
         if author_id is not None:
@@ -67,6 +69,7 @@ class ApiClient:
             params["keyword"] = keyword 
         if title_contains is not None:
             params["title_contains"] = title_contains
+        params["include_total"] = str(include_total).lower()
         params["page_number"] = page_number
         params["page_size"] = page_size
         response = requests.get(f"{self.base_url}/books/", headers=headers, params=params)
@@ -111,11 +114,12 @@ class ApiClient:
     
 
     # ORDERS
-    def get_orders(self, jwt: str, status=None, page_number=1, page_size=100):
+    def get_orders(self, jwt: str, status=None, include_total=True, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {}
         if status is not None:
             params["status"] = status
+        params["include_total"] = str(include_total).lower()
         params["page_number"] = page_number
         params["page_size"] = page_size
         response = requests.get(f"{self.base_url}/orders/", headers=headers, params=params)
@@ -154,9 +158,10 @@ class ApiClient:
     
 
     # AUTHORS
-    def get_authors(self, jwt: str, page_number=1, page_size=100):
+    def get_authors(self, jwt: str, include_total=True, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {
+            "include_total": str(include_total).lower(),
             "page_number": page_number,
             "page_size": page_size
         }

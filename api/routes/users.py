@@ -22,6 +22,7 @@ def get_users(context):
     page_number = request.args.get("page_number", 1, type=int)
     page_size = request.args.get("page_size", 100, type=int)
     role = request.args.get("role", None)
+    include_total = request.args.get("include_total", "false").lower() == "true"
 
     filters = []
 
@@ -35,9 +36,14 @@ def get_users(context):
         users = session.query(User).order_by(User.id).filter(*filters).offset((page_number - 1) * page_size).limit(page_size).all()
 
         users_list = [{"id": u.id, "username": u.username, "email": u.email, "role": u.role} for u in users]
+        if include_total:
+            total_count = session.query(User).filter(*filters).count()
+            return jsonify({"users": users_list, "page": {
+                "current_page": page_number,
+                "total_pages": (total_count + page_size - 1) // page_size,
+            }})
         return jsonify({"users": users_list, "page": {
-            "current_page": page_number,
-            "total_pages": (session.query(User).filter(*filters).count() + page_size - 1) // page_size,
+            "current_page": page_number
         }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

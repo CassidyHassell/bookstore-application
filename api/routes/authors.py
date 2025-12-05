@@ -15,14 +15,21 @@ def get_authors(context):
     session = SessionLocal()
     page_number = request.args.get("page_number", 1, type=int)
     page_size = request.args.get("page_size", 100, type=int)
+    include_total = request.args.get("include_total", "false").lower() == "true"
     try:
         authors = session.query(Author).order_by(Author.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
         authors_list = [{"id": a.id, "name": a.name, "bio": a.bio} for a in authors]
-        return jsonify({"authors": authors_list, "page": {
-            "current_page": page_number,
-            "total_pages": (session.query(Author).count() + page_size - 1) // page_size,
-        }})
+        if include_total:
+            total_count = session.query(Author).count()
+            return jsonify({"authors": authors_list, "page": {
+                "current_page": page_number,
+                "total_pages": (total_count + page_size - 1) // page_size,
+            }})
+        else:
+            return jsonify({"authors": authors_list, "page": {
+                "current_page": page_number
+            }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

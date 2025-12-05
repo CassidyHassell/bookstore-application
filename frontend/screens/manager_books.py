@@ -5,13 +5,13 @@ from frontend.screens.new_book import new_book_window
 from frontend.async_wrapper import run_in_background
 
 current_page = 1
-PAGE_SIZE = 100
+PAGE_SIZE = 30
 
 def manager_books_window(state, api):
 
     pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
 
-    def fetch_books(state, api, status="All", title_filter="", author_id_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE):
+    def fetch_books(state, api, status="All", title_filter="", author_id_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE, include_total=False):
         try:
             status = status if status in ["All", "Available", "New", "Used", "Sold", "Rented"] else "All"
             status = status.lower()
@@ -20,10 +20,11 @@ def manager_books_window(state, api):
             if status == "all":
                 status = None
             
-            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, title_contains=title_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None, page_number=page, page_size=page_size)
+            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, title_contains=title_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None, page_number=page, page_size=page_size, include_total=include_total)
             books = resp.get("books", [])
             total_pages = resp.get("page", None).get("total_pages", 1)
-            pagination_controls.update_total_pages(total_pages)
+            if include_total:
+                pagination_controls.update_total_pages(total_pages)
 
         except Exception as e:
             print(f"Error fetching books: {e}")
@@ -101,7 +102,7 @@ def manager_books_window(state, api):
     pagination_controls.attach_window(window)
 
     # Initial fetch of books
-    run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api)
+    run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True)
 
     while True:
         event, values = window.read()

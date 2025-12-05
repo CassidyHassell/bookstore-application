@@ -18,6 +18,7 @@ def get_books(context):
     title_contains = request.args.get("title_contains", None)
     page_number = request.args.get("page_number", 1, type=int)
     page_size = request.args.get("page_size", 100, type=int)
+    include_total = request.args.get("include_total", "false").lower() == "true"
 
     print(f"Filters - author_id: {author_id}, status: {status}, keyword: {keyword}, title_contains: {title_contains}, page_number: {page_number}, page_size: {page_size}")
     session = SessionLocal()
@@ -51,13 +52,29 @@ def get_books(context):
         elif title_contains:
             filters.append(Book.title.ilike(f"%{title_contains}%"))
         
-        books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
+        base = session.query(Book.id).filter(*filters).order_by(Book.id)
+        if include_total:
+            total_count = base.count()
+
+        ids_subquery = base.offset((page_number - 1) * page_size).limit(page_size).subquery()
+
+        books = (
+            session.query(Book)
+            .join(ids_subquery, Book.id == ids_subquery.c.id).all()
+        )
+        # books = query.filter(*filters).order_by(Book.id).offset((page_number - 1) * page_size).limit(page_size).all()
 
         books_list = [{"id": b.id, "title": b.title, "status": b.status, "author": {"id": b.author.id, "name": b.author.name}, "price_buy": b.price_buy, "price_rent": b.price_rent} for b in books]
-        return jsonify({"books": books_list, "page": {
-            "current_page": page_number,
-            "total_pages": (session.query(Book).filter(*filters).count() + page_size - 1) // page_size,
-        }})
+        
+        if include_total:
+            return jsonify({"books": books_list, "page": {
+                "current_page": page_number,
+                "total_pages": (total_count + page_size - 1) // page_size,
+            }})
+        else:
+            return jsonify({"books": books_list, "page": {
+                "current_page": page_number
+            }})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
