@@ -106,6 +106,7 @@ def create_order(context):
         for ol_data in order_lines_data:
             new_order_line = OrderLine(order_id=new_order.id, book_id=ol_data['book_id'], type=ol_data['type'], price=ol_data['price'])
             session.add(new_order_line)
+        session.flush()
 
         # Generate bill after order creation
         bill_html = generate_bill(new_order, new_order.order_lines)
