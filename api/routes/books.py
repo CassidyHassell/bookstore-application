@@ -189,6 +189,18 @@ def create_book(context):
             # Ensure new_author.id is available
             session.flush()
             author_id = new_author.id
+
+        # validate prices
+        if price_buy is None or price_rent is None:
+            return jsonify({"error": "Both price_buy and price_rent must be provided"}), 400
+        
+        if price_buy < 0 or price_rent < 0:
+            return jsonify({"error": "Prices must be non-negative"}), 400
+        
+         # round to 2 decimals
+        price_buy = round(price_buy, 2)
+        price_rent = round(price_rent, 2)
+        
         new_book = Book(title=title, author_id=author_id, price_buy=price_buy, price_rent=price_rent, description=description)
         session.add(new_book)
         session.flush()  # Ensure new_book.id is available
