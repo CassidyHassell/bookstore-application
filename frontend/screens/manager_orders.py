@@ -107,6 +107,9 @@ def manager_orders_window(state, api):
                 orders = payload["result"]
             else:
                 orders = []
-            window["orders_list"].update(values=[f"Order ID: {o['id']} | Date: {o['order_date']} | Status: {o['payment_status']}" for o in orders])
+            if orders == []:
+                window["orders_list"].update(['No orders found.'])
+            else:
+                window["orders_list"].update(values=[f"Order ID: {o['id']} | Date: {o['order_date']} | Status: {o['payment_status']}" for o in orders])
     
     window.close()

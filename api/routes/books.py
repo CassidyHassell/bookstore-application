@@ -13,6 +13,7 @@ books_bp = Blueprint("books", __name__, url_prefix="/api/v1/books")
 @token_required
 def get_books(context):
     author_id = request.args.get("author_id", None)
+    author_name = request.args.get("author_name", None)
     status = request.args.get("status", None)
     keyword = request.args.getlist("keyword", None)
     title_contains = request.args.get("title_contains", None)
@@ -20,7 +21,7 @@ def get_books(context):
     page_size = request.args.get("page_size", 100, type=int)
     include_total = request.args.get("include_total", "false").lower() == "true"
 
-    print(f"Filters - author_id: {author_id}, status: {status}, keyword: {keyword}, title_contains: {title_contains}, page_number: {page_number}, page_size: {page_size}")
+    print(f"Filters - author_id: {author_id}, author_name: {author_name}, status: {status}, keyword: {keyword}, title_contains: {title_contains}, page_number: {page_number}, page_size: {page_size}")
     session = SessionLocal()
     try:
         status = status.lower() if status else None
@@ -34,13 +35,15 @@ def get_books(context):
             status = [status]
         
         # Normalize and clean inputs
-        keyword = [k for k in keyword if k] if keyword else None
+        keyword = [k.strip() for k in keyword if k] if keyword else None
 
         # Build query dynamically based on provided filters
         query = session.query(Book)
         filters = []
         if author_id:
             filters.append(Book.author_id == author_id)
+        elif author_name:
+            filters.append(Book.author.has(Author.name == author_name))
         if status:
             filters.append(Book.status.in_(status))
 

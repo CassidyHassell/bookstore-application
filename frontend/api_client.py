@@ -33,7 +33,7 @@ class ApiClient:
             raise Exception("Registration failed: " + response.json().get("error", "Unknown error"))
         return response.json()
     
-    
+
     # USERS
     def get_users(self, jwt: str, role=None, include_total=False, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
@@ -58,11 +58,13 @@ class ApiClient:
     
 
     # BOOKS
-    def get_books(self, jwt: str, author_id=None, status=None, keyword=None, title_contains=None, include_total=False, page_number=1, page_size=100):
+    def get_books(self, jwt: str, author_id=None, author_name=None, status=None, keyword=None, title_contains=None, include_total=False, page_number=1, page_size=100):
         headers = {"Authorization": f"{jwt}"}
         params = {}
         if author_id is not None:
             params["author_id"] = author_id
+        elif author_name is not None:
+            params["author_name"] = author_name
         if status is not None:
             params["status"] = status
         if keyword is not None:

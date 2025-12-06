@@ -7,12 +7,11 @@ from frontend.screens.registration import registration_window
 
 def manager_window(state, api):
     actions = sg.Frame("Actions", [
-        [sg.Button("Manage Books"), sg.Button("View Orders")],
-        [sg.Button("View Customers"), sg.Button("Add New Manager")]
+        [sg.Button("Manage Books"), sg.Button("View Orders"), sg.Button("Add New Manager")]
     ])  # Placeholder for future action buttons
     layout = [
         [sg.Text("Manager Dashboard")],
-        [sg.Button("Manage Books"), sg.Button("View Orders"), sg.Button("Logout")]
+        [actions, sg.Button("Logout")],
     ]
 
     window = sg.Window("Manager Dashboard", layout)
@@ -34,11 +33,13 @@ def manager_window(state, api):
             login_window(state, api)
             return
         elif event == "Manage Books":
+            window.disappear()
             manager_books_window(state, api)
+            window.reappear()
         elif event == "View Orders":
+            window.disappear()
             manager_orders_window(state, api)
-        elif event == "View Customers":
-            pass  # To be implemented
+            window.reappear()
         elif event == "Add New Manager":
             window.disappear()
             registration_window(state, api, role="manager")

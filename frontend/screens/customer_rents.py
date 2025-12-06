@@ -53,7 +53,10 @@ def customer_rents_window(state, api):
             else:
                 rented = []
             print(f"Rented books updated: {rented}")
-            window["rent_list"].update([f"{b['id']}: {b['title']}" for b in rented])
+            if rented == []:
+                window["rent_list"].update(['No rented books found.'])
+            else:
+                window["rent_list"].update([f"{b['id']}: {b['title']}" for b in rented])
             
                 
     window.close()

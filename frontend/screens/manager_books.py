@@ -11,7 +11,7 @@ def manager_books_window(state, api):
 
     pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
 
-    def fetch_books(state, api, status="All", title_filter="", author_id_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE, include_total=False):
+    def fetch_books(state, api, status="All", title_filter="", author_id_filter="", author_name_filter="", keywords_filter="", page=1, page_size=PAGE_SIZE, include_total=False):
         try:
             status = status if status in ["All", "Available", "New", "Used", "Sold", "Rented"] else "All"
             status = status.lower()
@@ -20,7 +20,7 @@ def manager_books_window(state, api):
             if status == "all":
                 status = None
             
-            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, title_contains=title_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None, page_number=page, page_size=page_size, include_total=include_total)
+            resp = api.get_books(state.jwt, status=status, author_id=author_id_filter or None, author_name=author_name_filter or None, title_contains=title_filter or None, keyword=keywords_filter.split(",") if keywords_filter else None, page_number=page, page_size=page_size, include_total=include_total)
             books = resp.get("books", [])
             total_pages = resp.get("page", None).get("total_pages", 1)
             if include_total:
@@ -67,7 +67,7 @@ def manager_books_window(state, api):
 
     searches = sg.Frame("Search Books", [
         [sg.Text("Title:"), sg.Input(key="title_search")],
-        [sg.Text("Author ID:"), sg.Input(key="author_id_search")],
+        [sg.Text("Author ID:"), sg.Input(key="author_id_search", enable_events=True), sg.Text("or Author Name:"), sg.Input(key="author_name_search")],
         [sg.Text("Keywords:"), sg.Input(key="keywords_search")],
         [sg.Text("Status:"), sg.Combo(["All", "Available", "New", "Used", "Sold", "Rented"], default_value="All", key="status_search")],
         [sg.Button("Search")]
@@ -85,7 +85,7 @@ def manager_books_window(state, api):
         [sg.Text("Description:")],
         [sg.Multiline(size=(60, 5), key="book_description", default_text="")],
         [sg.Text("Status:"), sg.Text("", key="book_status")],
-        [sg.Button("Update Book"), sg.Button("Delete Book")]
+        [sg.Button("Update Book")]
     ])
     books_layout = sg.Frame("Books", [
         [sg.Listbox(values=[], size=(80, 20), key="books_list", enable_events=True)],
@@ -118,13 +118,13 @@ def manager_books_window(state, api):
         current_page = pagination_controls.handle_event(event, values)
         if current_page is not None:
             # Fetch books for the new page with current filters
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
 
         if event == "Search":
             print("Searching books...")
             current_page = 1
             pagination_controls.set_current_page(1)
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
         
         if event == "Update Book":
             print("Updating book...")
@@ -148,15 +148,12 @@ def manager_books_window(state, api):
             }
             update_book(state, api, int(window["book_id"].get()), details, window=window)
             # Refresh book list after update
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"])
 
-        if event == "Delete Book":
-            print("Deleting book...")
-        
         if event == "Add New Book":
             new_book_window(state=state, api=api)
             # Refresh book list after adding new book
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"])
         
         if event == "book_author_id":
             author_id_input = values["book_author_id"].strip()
@@ -179,6 +176,16 @@ def manager_books_window(state, api):
                 books = payload["result"]
             else:
                 books = []
-            window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books])
+            if books == []:
+                window["books_list"].update(['No books found.'])
+            else:
+                window["books_list"].update(values=[f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books])
+
+        if event == "author_id_search":
+            # Disable author name input when author ID is being used
+            if values["author_id_search"].strip():
+                window["author_name_search"].update("", disabled=True)
+            else:
+                window["author_name_search"].update(disabled=False)
 
     window.close()

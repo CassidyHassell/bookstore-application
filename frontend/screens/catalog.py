@@ -14,7 +14,7 @@ def catalog_window(state, api):
     pagination_controls = PaginationControls(current_page=1, total_pages=1, base_key='Page')
 
     def fetch_books(state, api, status="Available", title_filter="",
-                author_id_filter="", keywords_filter="",
+                author_id_filter="", author_name_filter="", keywords_filter="",
                 page=1, page_size=PAGE_SIZE, include_total=False):
         try:
             status = status if status in ["Available", "New", "Used", "Rented"] else "Available"
@@ -28,6 +28,7 @@ def catalog_window(state, api):
                 state.jwt,
                 status=status,
                 author_id=author_id_filter or None,
+                author_name=author_name_filter or None,
                 title_contains=title_filter or None,
                 keyword=keywords_filter.split(",") if keywords_filter else None,
                 page_number=page,
@@ -68,7 +69,7 @@ def catalog_window(state, api):
 
     searches = sg.Frame("Search Books", [
         [sg.Text("Title:"), sg.Input(key="title_search")],
-        [sg.Text("Author ID:"), sg.Input(key="author_id_search")],
+        [sg.Text("Author ID:"), sg.Input(key="author_id_search", enable_events=True), sg.Text("or Author Name:"), sg.Input(key="author_name_search")],
         [sg.Text("Keywords:"), sg.Input(key="keywords_search")],
         [sg.Text("Status:"), sg.Combo(["Available", "New", "Used", "Rented"], default_value="Available", key="status_search")],
         [sg.Button("Search")]
@@ -118,7 +119,7 @@ def catalog_window(state, api):
         current_page = pagination_controls.handle_event(event, values)
         if current_page is not None:
             # Fetch books for the new page with current filters
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"], page=current_page, page_size=PAGE_SIZE)
 
         if event == "Buy Books" or event == "Rent Books":
             selected = values["book_list"]
@@ -153,7 +154,7 @@ def catalog_window(state, api):
                 sg.popup("Order Successful", f"Order ID: {resp.get('order_id')}")
                 orderlines.clear()
                 # Refresh the book list after checkout
-                run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+                run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"])
             except Exception as e:
                 print(f"Error during checkout: {e}")
                 sg.popup_error(f"Error during checkout: {e}")
@@ -167,7 +168,7 @@ def catalog_window(state, api):
             else:
                 window["Buy Books"].update(disabled=False)
                 window["Rent Books"].update(disabled=False)
-            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], keywords_filter=values["keywords_search"])
+            run_in_background(window, "-BOOKS_LOADED-", fetch_books, state, api, include_total=True, status=values["status_search"], title_filter=values["title_search"], author_id_filter=values["author_id_search"], author_name_filter=values["author_name_search"], keywords_filter=values["keywords_search"])
 
         if event == "View Rented Books":
             customer_rents_window(state, api)
@@ -189,9 +190,19 @@ def catalog_window(state, api):
             payload = values["-BOOKS_LOADED-"]
             if payload["ok"]:
                 books = payload["result"]
-                window["book_list"].update(
-                    [f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books]
-                )
+                if books == []:
+                    window["book_list"].update(['No books found.'])
+                else:
+                    window["book_list"].update(
+                        [f"{b['id']}: {b['title']} by {b['author']['name']}" for b in books]
+                    )
+
+        if event == "author_id_search":
+            # Disable author name input when author ID is being used
+            if values["author_id_search"].strip():
+                window["author_name_search"].update("", disabled=True)
+            else:
+                window["author_name_search"].update(disabled=False)
 
             
     window.close()
