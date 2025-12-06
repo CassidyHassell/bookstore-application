@@ -7,5 +7,6 @@ def run_in_background(window, event_key, func, *args, **kwargs):
             payload = {"ok": True, "result": result}
         except Exception as e:
             payload = {"ok": False, "error": e}
-        window.write_event_value(event_key, payload)
+        if window:
+            window.write_event_value(event_key, payload)
     threading.Thread(target=worker, daemon=True).start()
