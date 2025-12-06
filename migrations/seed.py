@@ -405,11 +405,11 @@ def empty_all_tables():
 def seed_all():
     empty_all_tables()
     seed_initial_users(count=10000)
-    authors = seed_initial_authors(count=50000)
-    books = seed_initial_books(authors=authors, count=1000000)
+    authors = seed_initial_authors(count=5000)
+    books = seed_initial_books(authors=authors, count=100000)
     keywords = seed_initial_keywords()
     seed_initial_book_keywords()
-    seed_initial_orders_with_lines(count=15000)
+    seed_initial_orders_with_lines(count=25000)
 
 if __name__ == "__main__":
     # Get user input to confirm seeding
