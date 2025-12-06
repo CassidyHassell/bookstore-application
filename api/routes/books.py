@@ -166,7 +166,7 @@ def get_user_rented_books(context):
         session.close()
 
 
-@books_bp.route("/new_book", methods=["POST"])
+@books_bp.route("/create_book", methods=["POST"])
 @token_required
 @role_required("Manager")
 def create_book(context):

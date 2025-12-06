@@ -2,9 +2,9 @@ import FreeSimpleGUI as sg
 
 def new_book_window(state, api):
 
-    def add_book(state, api, details, window=None):
+    def create_book(state, api, details, window=None):
         try:
-            resp = api.add_book(
+            resp = api.create_book(
                 state.jwt,
                 details
             )
@@ -74,7 +74,7 @@ def new_book_window(state, api):
                 "price_rent": float(values["book_rent_price"].strip()),
                 "description": values["book_description"]
             }
-            add_book(state, api, details, window=window)
+            create_book(state, api, details, window=window)
         
         elif event == "book_author_id":
             # Disable name and bio inputs if author ID is provided

@@ -100,9 +100,9 @@ class ApiClient:
             raise Exception("Failed to return book: " + response.json().get("error", "Unknown error"))
         return response.json()
     
-    def add_book(self, jwt: str, data):
+    def create_book(self, jwt: str, data):
         headers = {"Authorization": f"{jwt}"}
-        response = requests.post(f"{self.base_url}/books/new_book", json=data, headers=headers)
+        response = requests.post(f"{self.base_url}/books/create_book", json=data, headers=headers)
         if response.status_code != 200 and response.status_code != 201:
             raise Exception("Failed to add book: " + response.json().get("error", "Unknown error"))
         return response.json()
