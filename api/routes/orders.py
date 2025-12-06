@@ -98,7 +98,8 @@ def create_order(context):
             else:
                 return jsonify({"error": f"Invalid order line type '{ol['type']}' and book id {ol['book_id']}"}), 400
             
-        total_price = sum(ol['price'] for ol in order_lines_data)
+        # round to 2 decimals
+        total_price = round(sum(ol['price'] for ol in order_lines_data), 2)
         new_order = Order(user_id=user_id, total_price=total_price)
         session.add(new_order)
         session.flush()  # Ensure new_order.id is available

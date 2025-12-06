@@ -51,7 +51,7 @@ def get_author(context, id):
         session.close()
 
 
-@authors_bp.route("/new_author", methods=["POST"])
+@authors_bp.route("/create_author", methods=["POST"])
 @token_required
 @role_required("Manager")
 def create_author(context):
